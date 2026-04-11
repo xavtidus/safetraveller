@@ -1,0 +1,122 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+permissions:
+  id-token: write   # OIDC for AWS
+  contents: read
+
+env:
+  TF_ENV: dev
+
+jobs:
+  # ── Build the SPA ────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: webapp
+        run: npm ci
+
+      - name: Build
+        working-directory: webapp
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webapp-dist
+          path: webapp/dist
+          retention-days: 5
+
+  # ── Deploy infrastructure and site ───────────────────────
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: webapp-dist
+          path: webapp/dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-southeast-2' }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.9"
+
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          terraform init \
+            -backend-config="environments/${TF_ENV}.backend.hcl"
+
+      - name: Terraform Plan
+        working-directory: infra
+        run: |
+          terraform plan \
+            -var-file="environments/${TF_ENV}.tfvars" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: infra
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Terraform outputs
+        id: tf
+        working-directory: infra
+        run: |
+          echo "bucket=$(terraform output -raw s3_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "site_url=$(terraform output -raw site_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync webapp/dist "s3://${{ steps.tf.outputs.bucket }}" \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" \
+            --exclude "*.json"
+
+          # index.html and JSON with short cache for fast rollout
+          aws s3 cp webapp/dist/index.html "s3://${{ steps.tf.outputs.bucket }}/index.html" \
+            --cache-control "public, max-age=60"
+
+          find webapp/dist -name "*.json" -exec sh -c \
+            'aws s3 cp "$1" "s3://${{ steps.tf.outputs.bucket }}/$(echo "$1" | sed "s|webapp/dist/||")" --cache-control "public, max-age=60"' \
+            _ {} \;
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.tf.outputs.distribution_id }}" \
+            --paths "/*"
+
+      - name: Summary
+        run: |
+          echo "### Deployed to ${{ env.TF_ENV }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**URL:** ${{ steps.tf.outputs.site_url }}" >> "$GITHUB_STEP_SUMMARY"
