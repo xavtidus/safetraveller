@@ -15,6 +15,11 @@ import ExploreIcon from '@mui/icons-material/Explore';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { useNavigate } from 'react-router-dom';
 import destinations, { ADVISORY_LEVELS } from '../data/destinations';
+import { getCityCardStyle, getRegionEmoji } from '../utils/cityImages';
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
 
 const features = [
   {
@@ -145,8 +150,21 @@ export default function Home() {
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 },
                 }}
-                onClick={() => navigate('/destinations')}
+                onClick={() => navigate(`/destinations/${slugify(dest.city)}/${slugify(dest.country)}`)}
               >
+                <Box
+                  sx={{
+                    height: 180,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    ...getCityCardStyle(dest.city, dest.country),
+                  }}
+                >
+                  <Typography variant="h2" sx={{ opacity: 0.6, userSelect: 'none' }}>
+                    {getRegionEmoji(dest.country)}
+                  </Typography>
+                </Box>
                 <CardContent>
                   <Typography variant="h6" fontWeight={600}>
                     {dest.city}

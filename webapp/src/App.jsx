@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Destinations from './pages/Destinations';
+import DestinationDetail from './pages/DestinationDetail';
 import Safety from './pages/Safety';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -12,6 +13,7 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="destinations" element={<Destinations />} />
+        <Route path="destinations/:citySlug/:countrySlug" element={<DestinationDetail />} />
         <Route path="safety" element={<Safety />} />
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />

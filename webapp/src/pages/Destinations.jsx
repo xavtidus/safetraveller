@@ -28,7 +28,13 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import { useNavigate } from 'react-router-dom';
 import destinations, { ADVISORY_LEVELS, REGIONS } from '../data/destinations';
+import { getCityCardStyle, getRegionEmoji } from '../utils/cityImages';
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
 
 function AdvisoryBadge({ level }) {
   const info = ADVISORY_LEVELS[level];
@@ -54,6 +60,9 @@ export default function Destinations() {
   const [view, setView] = useState('cards');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+
+  const goToDetail = (d) => navigate(`/destinations/${slugify(d.city)}/${slugify(d.country)}`);
 
   const filtered = useMemo(() => {
     return destinations.filter((d) => {
@@ -226,7 +235,7 @@ export default function Destinations() {
                     a.city.localeCompare(b.city)
                 )
                 .map((d) => (
-                  <TableRow key={`${d.city}-${d.country}`} hover>
+                  <TableRow key={`${d.city}-${d.country}`} hover sx={{ cursor: 'pointer' }} onClick={() => goToDetail(d)}>
                     <TableCell>{d.city}</TableCell>
                     <TableCell>{d.country}</TableCell>
                     <TableCell>{d.region}</TableCell>
@@ -256,10 +265,26 @@ export default function Destinations() {
                     variant="outlined"
                     sx={{
                       height: '100%',
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { boxShadow: 4 },
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 },
+                      overflow: 'hidden',
                     }}
+                    onClick={() => goToDetail(d)}
                   >
+                    <Box sx={getCityCardStyle(d.city, d.country)}>
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          position: 'relative',
+                          zIndex: 1,
+                          opacity: 0.9,
+                          userSelect: 'none',
+                        }}
+                      >
+                        {getRegionEmoji(d.country)}
+                      </Typography>
+                    </Box>
                     <CardContent sx={{ pb: '12px !important' }}>
                       <Typography variant="subtitle1" fontWeight={600}>
                         {d.city}
