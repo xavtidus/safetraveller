@@ -5,7 +5,7 @@ import {
   Grid,
   Card,
   CardContent,
-  CardMedia,
+  Chip,
   Stack,
   useMediaQuery,
   useTheme,
@@ -14,6 +14,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import ExploreIcon from '@mui/icons-material/Explore';
 import GroupsIcon from '@mui/icons-material/Groups';
 import { useNavigate } from 'react-router-dom';
+import destinations, { ADVISORY_LEVELS } from '../data/destinations';
 
 const features = [
   {
@@ -36,23 +37,8 @@ const features = [
   },
 ];
 
-const featuredDestinations = [
-  {
-    name: 'Tokyo, Japan',
-    safety: 'Very Safe',
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=250&fit=crop',
-  },
-  {
-    name: 'Reykjavik, Iceland',
-    safety: 'Very Safe',
-    image: 'https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=400&h=250&fit=crop',
-  },
-  {
-    name: 'Lisbon, Portugal',
-    safety: 'Safe',
-    image: 'https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=400&h=250&fit=crop',
-  },
-];
+const featuredCities = ['Tokyo', 'Singapore', 'Reykjavik', 'Lisbon', 'Sydney', 'Toronto'];
+const featured = destinations.filter((d) => featuredCities.includes(d.city));
 
 export default function Home() {
   const navigate = useNavigate();
@@ -149,47 +135,41 @@ export default function Home() {
         Featured Destinations
       </Typography>
       <Grid container spacing={3}>
-        {featuredDestinations.map((dest) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dest.name}>
-            <Card
-              sx={{
-                cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 },
-              }}
-              onClick={() => navigate('/destinations')}
-            >
-              <CardMedia
-                component="img"
-                height="180"
-                image={dest.image}
-                alt={dest.name}
-              />
-              <CardContent>
-                <Typography variant="h6" fontWeight={600}>
-                  {dest.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    display: 'inline-block',
-                    mt: 1,
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 2,
-                    backgroundColor:
-                      dest.safety === 'Very Safe' ? '#e8f5e9' : '#fff3e0',
-                    color:
-                      dest.safety === 'Very Safe' ? '#2e7d32' : '#e65100',
-                    fontWeight: 600,
-                  }}
-                >
-                  {dest.safety}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+        {featured.map((dest) => {
+          const info = ADVISORY_LEVELS[dest.advisory];
+          return (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={`${dest.city}-${dest.country}`}>
+              <Card
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 },
+                }}
+                onClick={() => navigate('/destinations')}
+              >
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600}>
+                    {dest.city}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={1}>
+                    {dest.country} &middot; {dest.region}
+                  </Typography>
+                  <Chip
+                    label={info.label}
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      color: info.color,
+                      backgroundColor: info.bg,
+                      border: '1px solid',
+                      borderColor: info.color,
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
     </Box>
   );
