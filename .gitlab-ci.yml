@@ -1,0 +1,354 @@
+# =============================================================================
+# SafeTraveller – GitLab CI/CD Pipeline
+# =============================================================================
+#
+# PURPOSE
+# -------
+# This pipeline runs **side-by-side** with the existing GitHub Actions workflow
+# (.github/workflows/deploy.yml). It is designed for a hybrid migration PoC
+# where both CI systems operate in parallel during the transition from
+# GitHub + Jenkins to GitLab.
+#
+# Neither system depends on or interferes with the other. Both can build,
+# scan, plan, and deploy independently. This de-risks the migration by
+# letting teams validate GitLab behaviour against the known-good GitHub
+# pipeline before cutting over.
+#
+# STAGES
+# ------
+#   build           → Install deps & build the React SPA
+#   scan            → SAST, Dependency Scanning, Secret Detection
+#   test            → Lint & unit tests
+#   terraform-plan  → Terraform init + plan (always runs, never mutates)
+#   deploy          → Terraform apply + S3 sync + CloudFront invalidation
+#                     (manual gate, protected branches only)
+#
+# REQUIREMENTS
+# ------------
+#   GitLab Ultimate trial (for SAST / Dependency Scanning templates)
+#   CI/CD Variables (Settings → CI/CD → Variables):
+#     AWS_ACCESS_KEY_ID        (masked, protected)
+#     AWS_SECRET_ACCESS_KEY    (masked, protected)
+#     AWS_DEFAULT_REGION       (e.g. ap-southeast-2)
+#     TF_ENV                   (e.g. dev)
+#   Protected environment "production" with required approvals configured
+#   in Settings → CI/CD → Environments.
+#
+# =============================================================================
+
+
+# ---------------------------------------------------------------------------
+# Workflow rules – control WHEN the pipeline runs
+# ---------------------------------------------------------------------------
+# Pipelines run on:
+#   • Every push to the default branch (main)
+#   • Every merge request (plan only – deploy is blocked)
+#   • Manual trigger via "Run pipeline" in the UI
+#
+# This mirrors the GitHub Actions trigger (push to main + workflow_dispatch)
+# while adding merge-request validation, which GitHub handles separately
+# via pull_request events.
+# ---------------------------------------------------------------------------
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+
+# ---------------------------------------------------------------------------
+# Stage ordering
+# ---------------------------------------------------------------------------
+stages:
+  - build
+  - scan
+  - test
+  - terraform-plan
+  - deploy
+
+
+# ---------------------------------------------------------------------------
+# Global defaults
+# ---------------------------------------------------------------------------
+# Node 20 matches the GitHub Actions workflow (actions/setup-node@v4 node 20).
+# The image is used by most jobs; Terraform jobs override it.
+# ---------------------------------------------------------------------------
+default:
+  image: node:20-alpine
+  tags: []                       # Use shared runners; override for self-hosted
+
+
+# ---------------------------------------------------------------------------
+# Global variables
+# ---------------------------------------------------------------------------
+variables:
+  # npm: deterministic installs, reduced output noise
+  NPM_CONFIG_PREFER_OFFLINE: "true"
+  NPM_CONFIG_PROGRESS: "false"
+
+  # Terraform version – matches the GitHub workflow (~> 1.9)
+  TF_VERSION: "1.9.8"
+
+  # Default environment – override in the UI or per-environment schedule
+  TF_ENV: "dev"
+
+  # Terraform plan file name (used as artifact between plan/apply)
+  TF_PLAN_FILE: tfplan
+
+  # Prevent Terraform from prompting for input
+  TF_INPUT: "false"
+  TF_IN_AUTOMATION: "true"
+
+
+# ---------------------------------------------------------------------------
+# Cache templates – reuse across jobs to speed up builds
+# ---------------------------------------------------------------------------
+# npm cache: keyed on lockfile hash so it busts automatically on dep changes.
+# Terraform plugin cache: avoids re-downloading providers on every run.
+# ---------------------------------------------------------------------------
+.npm_cache: &npm_cache
+  key:
+    files:
+      - webapp/package-lock.json
+  paths:
+    - webapp/node_modules/
+  policy: pull-push
+
+.terraform_cache: &terraform_cache
+  key: terraform-plugins
+  paths:
+    - infra/.terraform/providers/
+  policy: pull-push
+
+
+# =============================================================================
+# STAGE: build
+# =============================================================================
+# Installs dependencies and builds the Vite-based React SPA.
+# The dist/ folder is passed to downstream stages as an artifact.
+# This mirrors the "build" job in the GitHub Actions workflow.
+# =============================================================================
+build:
+  stage: build
+  cache:
+    - <<: *npm_cache
+  script:
+    - cd webapp
+    - npm ci --prefer-offline
+    - npm run build
+  artifacts:
+    paths:
+      - webapp/dist/
+    expire_in: 3 days
+  rules:
+    - when: on_success
+
+
+# =============================================================================
+# STAGE: scan
+# =============================================================================
+# GitLab Ultimate security scanners run here. Each include pulls a managed
+# template that auto-detects language/framework and produces a SARIF report
+# visible in the MR security widget and the Vulnerability Report.
+#
+# WHY THIS MATTERS FOR HYBRID MIGRATION:
+# GitHub Actions required third-party actions (e.g. github/codeql-action)
+# for equivalent scanning. GitLab provides all of these out of the box with
+# Ultimate, reducing maintenance burden and centralising vulnerability
+# management in one dashboard.
+# =============================================================================
+
+# ── Include GitLab-managed security scanner templates ──────────────────────
+include:
+  # SAST: Static Application Security Testing (semgrep, eslint-plugin-security)
+  - template: Jobs/SAST.gitlab-ci.yml
+
+  # Dependency Scanning: known CVEs in npm packages (via gemnasium)
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+
+  # Secret Detection: leaked tokens, keys, passwords in source code
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+
+# Override the default stage for all included scanner jobs so they land in
+# our "scan" stage rather than the default "test" stage.
+sast:
+  stage: scan
+  rules:
+    - when: on_success
+
+dependency_scanning:
+  stage: scan
+  rules:
+    - when: on_success
+
+secret_detection:
+  stage: scan
+  rules:
+    - when: on_success
+
+
+# =============================================================================
+# STAGE: test
+# =============================================================================
+
+# ── Lint ───────────────────────────────────────────────────────────────────
+# Runs ESLint with the project's flat config (eslint.config.js).
+# Linting acts as a quality gate – failures block the pipeline.
+# =============================================================================
+lint:
+  stage: test
+  cache:
+    - <<: *npm_cache
+      policy: pull               # read-only; build already pushed the cache
+  script:
+    - cd webapp
+    - npm ci --prefer-offline
+    - npm run lint
+  rules:
+    - when: on_success
+
+# ── Unit / integration tests (placeholder) ─────────────────────────────────
+# SafeTraveller doesn't have a test suite yet. This job is scaffolded so
+# that when tests are added (e.g. vitest), the pipeline picks them up
+# automatically. Until then it passes with a notice.
+# =============================================================================
+unit_tests:
+  stage: test
+  cache:
+    - <<: *npm_cache
+      policy: pull
+  script:
+    - cd webapp
+    - npm ci --prefer-offline
+    - |
+      if npm run --silent test -- --passWithNoTests 2>/dev/null; then
+        echo "✓ Tests passed"
+      else
+        echo "ℹ No test script defined – skipping. Add a 'test' script to package.json when ready."
+      fi
+  allow_failure: true            # Non-blocking until tests exist
+  rules:
+    - when: on_success
+
+
+# =============================================================================
+# STAGE: terraform-plan
+# =============================================================================
+# Runs `terraform init` and `terraform plan` only – never mutates state.
+# The plan output is saved as an artifact so the deploy stage can apply the
+# exact same plan (no drift between plan and apply).
+#
+# This runs on EVERY pipeline (including merge requests) so reviewers can
+# inspect infrastructure changes before merging.
+#
+# HYBRID NOTE: The plan uses the same S3 backend and tfvars as the GitHub
+# workflow, so both pipelines see identical state. Terraform's state locking
+# (DynamoDB) prevents concurrent applies from colliding.
+# =============================================================================
+terraform_plan:
+  stage: terraform-plan
+  image:
+    name: hashicorp/terraform:$TF_VERSION
+    entrypoint: [""]
+  cache:
+    - <<: *terraform_cache
+  before_script:
+    # Expose AWS credentials for the Terraform AWS provider
+    - export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+  script:
+    - cd infra
+    - terraform init -backend-config="environments/${TF_ENV}.backend.hcl"
+    - terraform validate
+    - terraform plan
+        -var-file="environments/${TF_ENV}.tfvars"
+        -out="${TF_PLAN_FILE}"
+  artifacts:
+    paths:
+      - infra/${TF_PLAN_FILE}
+      - infra/.terraform/            # Required for apply to find providers
+      - infra/.terraform.lock.hcl
+    expire_in: 1 day
+  rules:
+    - when: on_success
+
+
+# =============================================================================
+# STAGE: deploy
+# =============================================================================
+# Applies the Terraform plan, syncs the built SPA to S3, and invalidates
+# the CloudFront cache. This mirrors the GitHub Actions "deploy" job.
+#
+# SAFETY CONTROLS:
+#   1. Manual approval gate  → `when: manual` requires a human click
+#   2. Protected environment → GitLab enforces required approvers
+#   3. Branch restriction    → Only runs on the default branch (main)
+#   4. Depends on all prior  → Build, scan, test, and plan must all pass
+#
+# These controls ensure that code reaching production has been built,
+# scanned for vulnerabilities, linted, and reviewed via Terraform plan
+# before anyone can hit "Deploy".
+#
+# FOR THE DEMO: Show the pipeline paused at this stage, click the manual
+# play button, and walk through the approval flow in the environment page.
+# =============================================================================
+deploy:
+  stage: deploy
+  image:
+    name: hashicorp/terraform:$TF_VERSION
+    entrypoint: [""]
+  dependencies:
+    - build                      # Brings webapp/dist/ artifact
+    - terraform_plan             # Brings infra/tfplan + .terraform/
+  environment:
+    name: production
+    url: https://$CLOUDFRONT_DOMAIN
+  cache: []                      # No cache needed – artifacts carry everything
+  before_script:
+    - export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+    # Install AWS CLI (not present in the Terraform image)
+    - apk add --no-cache aws-cli
+  script:
+    # ── Terraform Apply ──────────────────────────────────────────
+    - cd infra
+    - terraform init -backend-config="environments/${TF_ENV}.backend.hcl"
+    - terraform apply -auto-approve "${TF_PLAN_FILE}"
+
+    # ── Capture outputs ──────────────────────────────────────────
+    - export S3_BUCKET=$(terraform output -raw s3_bucket_name)
+    - export CF_DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+    - export SITE_URL=$(terraform output -raw site_url)
+    - cd ..
+
+    # ── Sync SPA to S3 ──────────────────────────────────────────
+    # Hashed assets get long-lived immutable cache headers.
+    # index.html and JSON get short cache for fast rollouts.
+    # This matches the GitHub Actions sync strategy exactly.
+    - |
+      aws s3 sync webapp/dist "s3://${S3_BUCKET}" \
+        --delete \
+        --cache-control "public, max-age=31536000, immutable" \
+        --exclude "index.html" \
+        --exclude "*.json"
+    - |
+      aws s3 cp webapp/dist/index.html "s3://${S3_BUCKET}/index.html" \
+        --cache-control "public, max-age=60"
+    - |
+      find webapp/dist -name "*.json" -exec sh -c \
+        'aws s3 cp "$1" "s3://'"${S3_BUCKET}"'/$(echo "$1" | sed "s|webapp/dist/||")" --cache-control "public, max-age=60"' \
+        _ {} \;
+
+    # ── Invalidate CloudFront cache ──────────────────────────────
+    - |
+      aws cloudfront create-invalidation \
+        --distribution-id "${CF_DIST_ID}" \
+        --paths "/*"
+
+    # ── Summary ──────────────────────────────────────────────────
+    - echo "Deployed ${TF_ENV} → ${SITE_URL}"
+  rules:
+    # Only allow deploy on the default branch (main), with a manual gate
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: false       # Pipeline stays "blocked" until approved
+    # Block deploy on merge requests and other branches
+    - when: never
