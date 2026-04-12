@@ -22,18 +22,7 @@
     {
       "Sid": "CloudFront",
       "Effect": "Allow",
-      "Action": [
-        "cloudfront:CreateInvalidation",
-        "cloudfront:GetDistribution",
-        "cloudfront:GetDistributionConfig",
-        "cloudfront:UpdateDistribution",
-        "cloudfront:CreateDistribution",
-        "cloudfront:DeleteDistribution",
-        "cloudfront:TagResource",
-        "cloudfront:CreateOriginAccessIdentity",
-        "cloudfront:GetOriginAccessIdentity",
-        "cloudfront:DeleteOriginAccessIdentity"
-      ],
+      "Action": ["cloudfront:*"],
       "Resource": "*"
     },
     {
