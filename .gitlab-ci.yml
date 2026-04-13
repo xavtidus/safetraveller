@@ -367,9 +367,8 @@ deploy:
     # ── Summary ──────────────────────────────────────────────────
     - echo "Deployed ${TF_ENV} → ${SITE_URL}"
   rules:
-    # Only allow deploy on the default branch (main), with a manual gate
+    # Deploy automatically on the default branch (main)
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
-      allow_failure: false       # Pipeline stays "blocked" until approved
+      when: on_success
     # Block deploy on merge requests and other branches
     - when: never
