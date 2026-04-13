@@ -211,13 +211,6 @@ Push to `main` or run the workflow manually from the **Actions** tab. The pipeli
 4. Invalidate the CloudFront cache on `/*`
 5. Output the site URL in the workflow summary
 
-#### Oops!
-
-```bash
-AWS_ACCESS_KEY_ID=AKIAXD37UQSFCSQZCVI6
-AWS_SECRET_ACCESS_KEY=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
-
-
 ## Licence
 
 This project is provided as-is for educational and demonstration purposes.
