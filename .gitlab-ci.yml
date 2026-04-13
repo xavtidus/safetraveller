@@ -132,6 +132,13 @@ variables:
 # ---------------------------------------------------------------------------
 .assume_role: &assume_role
   - |
+    # Install the official AWS CLI v2 bundle (avoids Alpine package conflicts
+    # with the libexpat version bundled in the hashicorp/terraform image).
+    apk add --no-cache curl unzip
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+    unzip -q /tmp/awscliv2.zip -d /tmp
+    /tmp/aws/install
+    rm -rf /tmp/aws /tmp/awscliv2.zip
     export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
     STS=$(aws sts assume-role-with-web-identity \
       --role-arn "${ROLE_ARN}" \
@@ -269,7 +276,6 @@ terraform_plan:
   cache:
     - <<: *terraform_cache
   before_script:
-    - apk add --no-cache aws-cli
     - *assume_role
   script:
     - cd infra
@@ -323,7 +329,6 @@ deploy:
       aud: https://gitlab.com
   cache: []                      # No cache needed – artifacts carry everything
   before_script:
-    - apk add --no-cache aws-cli
     - *assume_role
   script:
     # ── Terraform Apply ──────────────────────────────────────────
