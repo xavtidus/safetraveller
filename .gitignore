@@ -1,0 +1,14 @@
+# Environment files – never commit real credentials
+# .env
+# .env.local
+# .env.*.local
+
+# Node
+webapp/node_modules/
+webapp/dist/
+
+# Terraform
+infra/.terraform/
+infra/*.tfplan
+infra/tfplan
+infra/.terraform.lock.hcl

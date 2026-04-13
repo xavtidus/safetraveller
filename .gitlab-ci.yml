@@ -202,11 +202,15 @@ include:
   # Secret Detection: leaked tokens, keys, passwords in source code
   - template: Jobs/Secret-Detection.gitlab-ci.yml
 
-# NOTE: The included scanner templates (sast, dependency_scanning,
-# secret_detection) define configuration-only base jobs that must not be
-# overridden. The actual analyzer jobs (e.g. semgrep-sast,
-# gemnasium-dependency_scanning) are auto-generated and run in their
-# default stage. Overriding the base jobs causes "exit 1" failures.
+# NOTE: The included scanner templates define configuration-only base jobs
+# (prefixed with .) that must not be redefined. The concrete analyzer jobs
+# (secret_detection, semgrep-sast, etc.) can be safely extended.
+#
+# secret_detection is overridden below to set allow_failure: false so that
+# any detected secret blocks the pipeline rather than just reporting to the
+# Security Dashboard.
+secret_detection:
+  allow_failure: false
 
 
 # =============================================================================
