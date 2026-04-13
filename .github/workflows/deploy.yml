@@ -16,6 +16,7 @@ permissions:
 
 env:
   TF_ENV: dev
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── Build the SPA ────────────────────────────────────────
