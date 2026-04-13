@@ -1,7 +1,7 @@
-# Environment files – never commit real credentials
-# .env
-# .env.local
-# .env.*.local
+# Environment files
+.env
+.env.local
+.env.*.local
 
 # Node
 webapp/node_modules/
