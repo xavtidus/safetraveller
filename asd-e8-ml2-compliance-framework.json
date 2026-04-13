@@ -1,0 +1,361 @@
+{
+  "name": "ASD Essential Eight – Maturity Level 2",
+  "description": "ASD Essential Eight ML2 compliance framework. Maps each E8 mitigation strategy to GitLab-native controls. Endpoint-focused strategies should be supplemented with external controls. Ref: cyber.gov.au/essential-eight",
+  "color": "#1f4e79",
+  "requirements": [
+    {
+      "name": "E8-AC: Application Control",
+      "description": "ML2 – Restrict execution to an approved set. Enforce via SAST, dependency scanning, validated CI config, restricted build access, and scoped job tokens.",
+      "controls": [
+        {
+          "name": "scanner_sast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_sast_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_dep_scanning_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_dep_scanning_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "has_valid_ci_config",
+          "control_type": "internal",
+          "expression": {
+            "field": "has_valid_ci_config",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "restricted_build_access",
+          "control_type": "internal",
+          "expression": {
+            "field": "restricted_build_access",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "cicd_job_token_scope_enabled",
+          "control_type": "internal",
+          "expression": {
+            "field": "cicd_job_token_scope_enabled",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-PA: Patch Applications",
+      "description": "ML2 \u2013 Critical patches within 48 hrs; others within 1 month. Fortnightly vulnerability scans. Unsupported software removed. Enforced via dependency, container, DAST, and SAST scanning.",
+      "controls": [
+        {
+          "name": "scanner_dep_scanning_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_dep_scanning_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_container_scanning_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_container_scanning_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_dast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_dast_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_sast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_sast_running",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-MS: Configure Microsoft Office Macro Settings",
+      "description": "ML2 – Disable macros except for approved, signed use cases. Primarily an endpoint policy; GitLab enforces SAST, secret detection, and push protection. Supplement with external controls.",
+      "controls": [
+        {
+          "name": "scanner_sast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_sast_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_secret_detection_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_secret_detection_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "push_protection_enabled",
+          "control_type": "internal",
+          "expression": {
+            "field": "push_protection_enabled",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-UAH: User Application Hardening",
+      "description": "ML2 – Harden web-facing applications per ASD guidance. Enforce via DAST, SAST, IaC scanning, and code quality checks to detect misconfigurations in deployed apps and infrastructure.",
+      "controls": [
+        {
+          "name": "scanner_dast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_dast_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_sast_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_sast_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_iac_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_iac_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_code_quality_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_code_quality_running",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-RAP: Restrict Administrative Privileges",
+      "description": "ML2 – Validate and limit privileged access to duties required. Enforce least privilege via dual owners, strict repo permissions, restricted push/merge, and inactive-user reviews.",
+      "controls": [
+        {
+          "name": "ensure_2_admins_per_repo",
+          "control_type": "internal",
+          "expression": {
+            "field": "ensure_2_admins_per_repo",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "more_members_than_admins",
+          "control_type": "internal",
+          "expression": {
+            "field": "more_members_than_admins",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "strict_permissions_for_repo",
+          "control_type": "internal",
+          "expression": {
+            "field": "strict_permissions_for_repo",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "restrict_push_merge_access",
+          "control_type": "internal",
+          "expression": {
+            "field": "restrict_push_merge_access",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "review_and_remove_inactive_users",
+          "control_type": "internal",
+          "expression": {
+            "field": "review_and_remove_inactive_users",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-POS: Patch Operating Systems",
+      "description": "ML2 \u2013 Critical OS patches within 48 hrs; others within 1 month. Use current OS releases. Enforce via container scanning, IaC scanning, and dependency scanning.",
+      "controls": [
+        {
+          "name": "scanner_container_scanning_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_container_scanning_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_iac_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_iac_running",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "scanner_dep_scanning_running",
+          "control_type": "internal",
+          "expression": {
+            "field": "scanner_dep_scanning_running",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-MFA: Multi-factor Authentication",
+      "description": "ML2 – MFA for all users of internet-facing services and data repositories. Phishing-resistant where available. Enforce via MFA requirements, SSO, and separation of duties on merge requests.",
+      "controls": [
+        {
+          "name": "require_mfa_for_contributors",
+          "control_type": "internal",
+          "expression": {
+            "field": "require_mfa_for_contributors",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "require_mfa_at_org_level",
+          "control_type": "internal",
+          "expression": {
+            "field": "require_mfa_at_org_level",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "auth_sso_enabled",
+          "control_type": "internal",
+          "expression": {
+            "field": "auth_sso_enabled",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "merge_request_prevent_author_approval",
+          "control_type": "internal",
+          "expression": {
+            "field": "merge_request_prevent_author_approval",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "merge_request_prevent_committers_approval",
+          "control_type": "internal",
+          "expression": {
+            "field": "merge_request_prevent_committers_approval",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "E8-RB: Regular Backups",
+      "description": "ML2 – Coordinated backups of data, software, and config. Protect against unauthorised modification. Enforce via branch protection, force-push and deletion restrictions.",
+      "controls": [
+        {
+          "name": "project_repo_exists",
+          "control_type": "internal",
+          "expression": {
+            "field": "project_repo_exists",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "project_marked_for_deletion",
+          "control_type": "internal",
+          "expression": {
+            "field": "project_marked_for_deletion",
+            "operator": "=",
+            "value": false
+          }
+        },
+        {
+          "name": "default_branch_protected",
+          "control_type": "internal",
+          "expression": {
+            "field": "default_branch_protected",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "force_push_disabled",
+          "control_type": "internal",
+          "expression": {
+            "field": "force_push_disabled",
+            "operator": "=",
+            "value": true
+          }
+        },
+        {
+          "name": "branch_deletion_disabled",
+          "control_type": "internal",
+          "expression": {
+            "field": "branch_deletion_disabled",
+            "operator": "=",
+            "value": true
+          }
+        }
+      ]
+    }
+  ]
+}
