@@ -120,6 +120,30 @@ variables:
     - infra/.terraform/providers/
   policy: pull-push
 
+# ---------------------------------------------------------------------------
+# OIDC → AWS credential exchange
+# ---------------------------------------------------------------------------
+# GitLab injects GITLAB_OIDC_TOKEN (a short-lived JWT) which is exchanged
+# for temporary STS credentials via AssumeRoleWithWebIdentity.
+# ROLE_ARN must be set as a masked, protected CI variable:
+#   Settings → CI/CD → Variables → ROLE_ARN
+#   e.g. arn:aws:iam::489357083786:role/GitLabDeployRole
+# The trust policy is in aws/gitlab-trust-policy.json.
+# ---------------------------------------------------------------------------
+.assume_role: &assume_role
+  - |
+    export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+    STS=$(aws sts assume-role-with-web-identity \
+      --role-arn "${ROLE_ARN}" \
+      --role-session-name "gitlab-ci-${CI_JOB_ID}" \
+      --web-identity-token "${GITLAB_OIDC_TOKEN}" \
+      --duration-seconds 3600 \
+      --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+      --output text)
+    export AWS_ACCESS_KEY_ID=$(echo $STS | cut -d' ' -f1)
+    export AWS_SECRET_ACCESS_KEY=$(echo $STS | cut -d' ' -f2)
+    export AWS_SESSION_TOKEN=$(echo $STS | cut -d' ' -f3)
+
 
 # =============================================================================
 # STAGE: build
@@ -239,11 +263,14 @@ terraform_plan:
   image:
     name: hashicorp/terraform:$TF_VERSION
     entrypoint: [""]
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
   cache:
     - <<: *terraform_cache
   before_script:
-    # Expose AWS credentials for the Terraform AWS provider
-    - export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+    - apk add --no-cache aws-cli
+    - *assume_role
   script:
     - cd infra
     - terraform init -backend-config="environments/${TF_ENV}.backend.hcl"
@@ -291,11 +318,13 @@ deploy:
   environment:
     name: production
     url: https://$CLOUDFRONT_DOMAIN
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
   cache: []                      # No cache needed – artifacts carry everything
   before_script:
-    - export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
-    # Install AWS CLI (not present in the Terraform image)
     - apk add --no-cache aws-cli
+    - *assume_role
   script:
     # ── Terraform Apply ──────────────────────────────────────────
     - cd infra
