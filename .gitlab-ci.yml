@@ -134,7 +134,9 @@ variables:
   - |
     # Install the official AWS CLI v2 bundle (avoids Alpine package conflicts
     # with the libexpat version bundled in the hashicorp/terraform image).
-    apk add --no-cache curl unzip
+    # libc6-compat provides the glibc shims needed to run the glibc-linked
+    # AWS CLI v2 binary on Alpine (musl libc).
+    apk add --no-cache curl unzip libc6-compat
     curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
     unzip -q /tmp/awscliv2.zip -d /tmp
     /tmp/aws/install
