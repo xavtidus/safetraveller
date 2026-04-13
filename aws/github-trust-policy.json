@@ -15,6 +15,21 @@
           "token.actions.githubusercontent.com:sub": "repo:xavtidus/safetraveller:*"
         }
       }
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::489357083786:oidc-provider/gitlab.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "gitlab.com:aud": "https://gitlab.com"
+        },
+        "StringLike": {
+          "gitlab.com:sub": "project_path:xh7359/safetraveller:ref_type:branch:ref:*"
+        }
+      }
     }
   ]
 }
