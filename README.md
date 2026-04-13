@@ -216,8 +216,9 @@ Push to `main` or run the workflow manually from the **Actions** tab. The pipeli
 For demonstration purposes only — this is a **fake** AWS credential that GitLab Secret Detection **will** catch:
 
 ```bash
-AWS_ACCESS_KEY_ID=AKIAXD37UQSFAKXE6WJC
-AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_ACCESS_KEY_ID=AKIAXD37UQSFCSQZCVI6
+AWS_SECRET_ACCESS_KEY=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
+
 
 ## Licence
 
