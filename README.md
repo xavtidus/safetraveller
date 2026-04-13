@@ -211,9 +211,13 @@ Push to `main` or run the workflow manually from the **Actions** tab. The pipeli
 4. Invalidate the CloudFront cache on `/*`
 5. Output the site URL in the workflow summary
 
-#### 6. Administrator Access
+#### Demo: Secret Detection Test (Intentionally Leaked)
 
-The Admin password is: Adm1nistr@tor123
+For demonstration purposes only — this is a **fake** AWS credential that GitLab Secret Detection **will** catch:
+
+```bash
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 ## Licence
 
