@@ -211,6 +211,10 @@ Push to `main` or run the workflow manually from the **Actions** tab. The pipeli
 4. Invalidate the CloudFront cache on `/*`
 5. Output the site URL in the workflow summary
 
+#### 6. Administrator Access
+
+The Admin password is: Adm1nistr@tor123
+
 ## Licence
 
 This project is provided as-is for educational and demonstration purposes.
