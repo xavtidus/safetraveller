@@ -12,7 +12,7 @@ Safe Traveller demonstrates how a modern React SPA can present travel safety inf
 - Searchable, filterable destination listings with card and table views
 - Detailed destination pages with risk assessments, safety tips, health info, transport guidance, and emergency contacts
 - Responsive design that works across desktop, tablet, and mobile
-- Material UI theming and component patterns
+- Material UI theming and component patterns.
 
 All destination data and safety guidance is **mocked** — it does not reflect real-world conditions and must not be used for actual travel planning.
 
