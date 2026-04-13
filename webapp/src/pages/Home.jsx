@@ -69,7 +69,7 @@ export default function Home() {
           gutterBottom
           fontWeight={700}
         >
-          Travel the World Safely
+          Travel the World Safely ✈️
         </Typography>
         <Typography
           variant={isMobile ? 'body1' : 'h6'}

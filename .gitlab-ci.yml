@@ -320,7 +320,7 @@ deploy:
     - build                      # Brings webapp/dist/ artifact
     - terraform_plan             # Brings infra/tfplan + .terraform/
   environment:
-    name: production
+    name: dev
     url: https://$CLOUDFRONT_DOMAIN
   id_tokens:
     GITLAB_OIDC_TOKEN:
