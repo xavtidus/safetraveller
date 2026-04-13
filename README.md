@@ -99,6 +99,20 @@ The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) 
 1. **Build** — installs dependencies, runs `npm run build`, and uploads the `dist/` artifact
 2. **Deploy** — provisions infrastructure with Terraform, syncs the build to S3, and invalidates the CloudFront cache on `/*`
 
+### GitLab CI/CD Variables
+
+The repository also includes a GitLab pipeline in `.gitlab-ci.yml` that uses GitLab OIDC to assume the AWS deploy role without long-lived AWS keys.
+
+Configure these GitLab CI/CD variables under **Settings → CI/CD → Variables**:
+
+| Variable             | Value                                      |
+| -------------------- | ------------------------------------------ |
+| `AWS_ROLE_ARN`       | ARN of the IAM role GitLab should assume   |
+| `AWS_DEFAULT_REGION` | `ap-southeast-2` (or your preferred region) |
+| `TF_ENV`             | `dev` (or your Terraform environment name) |
+
+`ROLE_ARN` is also supported as a legacy fallback, but `AWS_ROLE_ARN` is the canonical name used across the repo.
+
 ### AWS Architecture
 
 | Resource    | Purpose                                                        |

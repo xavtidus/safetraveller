@@ -27,8 +27,7 @@
 # ------------
 #   GitLab Ultimate trial (for SAST / Dependency Scanning templates)
 #   CI/CD Variables (Settings → CI/CD → Variables):
-#     AWS_ACCESS_KEY_ID        (masked, protected)
-#     AWS_SECRET_ACCESS_KEY    (masked, protected)
+#     AWS_ROLE_ARN             (masked, protected)
 #     AWS_DEFAULT_REGION       (e.g. ap-southeast-2)
 #     TF_ENV                   (e.g. dev)
 #   Protected environment "production" with required approvals configured
@@ -75,7 +74,6 @@ stages:
 # ---------------------------------------------------------------------------
 default:
   image: node:20-alpine
-  tags: []                       # Use shared runners; override for self-hosted
 
 
 # ---------------------------------------------------------------------------
@@ -125,8 +123,9 @@ variables:
 # ---------------------------------------------------------------------------
 # GitLab injects GITLAB_OIDC_TOKEN (a short-lived JWT) which is exchanged
 # for temporary STS credentials via AssumeRoleWithWebIdentity.
-# ROLE_ARN must be set as a masked, protected CI variable:
-#   Settings → CI/CD → Variables → ROLE_ARN
+# AWS_ROLE_ARN should be set as a masked, protected CI variable.
+# ROLE_ARN is still accepted as a backwards-compatible fallback.
+#   Settings → CI/CD → Variables → AWS_ROLE_ARN
 #   e.g. arn:aws:iam::489357083786:role/GitLabDeployRole
 # The trust policy is in aws/gitlab-trust-policy.json.
 # ---------------------------------------------------------------------------
@@ -138,8 +137,13 @@ variables:
     apk upgrade --no-cache
     apk add --no-cache aws-cli
     export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-ap-southeast-2}"
+    export AWS_ROLE_ARN="${AWS_ROLE_ARN:-${ROLE_ARN:-}}"
+    if [ -z "${AWS_ROLE_ARN}" ]; then
+      echo "AWS role ARN is not configured. Set AWS_ROLE_ARN (preferred) or ROLE_ARN in GitLab CI/CD variables." >&2
+      exit 1
+    fi
     STS=$(aws sts assume-role-with-web-identity \
-      --role-arn "${ROLE_ARN}" \
+      --role-arn "${AWS_ROLE_ARN}" \
       --role-session-name "gitlab-ci-${CI_JOB_ID}" \
       --web-identity-token "${GITLAB_OIDC_TOKEN}" \
       --duration-seconds 3600 \
