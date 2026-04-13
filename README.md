@@ -211,9 +211,7 @@ Push to `main` or run the workflow manually from the **Actions** tab. The pipeli
 4. Invalidate the CloudFront cache on `/*`
 5. Output the site URL in the workflow summary
 
-#### Demo: Secret Detection Test (Intentionally Leaked)
-
-For demonstration purposes only — this is a **fake** AWS credential that GitLab Secret Detection **will** catch:
+#### Oops!
 
 ```bash
 AWS_ACCESS_KEY_ID=AKIAXD37UQSFCSQZCVI6
