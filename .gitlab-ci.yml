@@ -169,22 +169,11 @@ include:
   # Secret Detection: leaked tokens, keys, passwords in source code
   - template: Jobs/Secret-Detection.gitlab-ci.yml
 
-# Override the default stage for all included scanner jobs so they land in
-# our "scan" stage rather than the default "test" stage.
-sast:
-  stage: scan
-  rules:
-    - when: on_success
-
-dependency_scanning:
-  stage: scan
-  rules:
-    - when: on_success
-
-secret_detection:
-  stage: scan
-  rules:
-    - when: on_success
+# NOTE: The included scanner templates (sast, dependency_scanning,
+# secret_detection) define configuration-only base jobs that must not be
+# overridden. The actual analyzer jobs (e.g. semgrep-sast,
+# gemnasium-dependency_scanning) are auto-generated and run in their
+# default stage. Overriding the base jobs causes "exit 1" failures.
 
 
 # =============================================================================
