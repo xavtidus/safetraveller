@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'NodeJS'
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                dir('webapp') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                dir('webapp') {
+                    sh 'npm run lint'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('webapp') {
+                    echo 'No tests configured yet — add a test script to package.json'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('webapp') {
+                    sh 'npm run build'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
